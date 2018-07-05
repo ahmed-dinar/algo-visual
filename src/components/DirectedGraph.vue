@@ -17,7 +17,10 @@ export default {
   name: 'DirectedGraph',
   data(){
     return {
-      color: d3.scaleOrdinal(d3.schemeCategory20),
+      nodeRadius: 30,
+      refX: 6,
+      linkDistance: 15,
+      collideRadius: 100,
       width: 960,
       height: 500,
       simulation: null,
@@ -31,18 +34,18 @@ export default {
       edges: [],
       graph: {
         nodes: [
-          {name: "ECB"},
-          {name: "MES"},
-          {name: "MOHAKHALI" },
-          {name: "DHANMONDI"},
-          {name: "MIRPUR-10" }
+          {name: "A"},
+          {name: "B"},
+          {name: "C" },
+          {name: "D"},
+          {name: "E" }
         ],
         links: [
-          {source: "ECB", target: "MES", value: "6.6 km"},
-          {source: "MES", target: "MOHAKHALI", value: "11 km"},
-          {source: "DHANMONDI", target: "MOHAKHALI", value: "8.6 km"},
-          {source: "DHANMONDI", target: "MIRPUR-10", value: "12 km"},
-          {source: "ECB", target: "MIRPUR-10", value: "4.7 km"}
+          {source: "A", target: "B", value: "6.6km"},
+          {source: "B", target: "C", value: "11km"},
+          {source: "D", target: "C", value: "8.6 km"},
+          {source: "D", target: "E", value: "12 km"},
+          {source: "A", target: "E", value: "4.7 km"}
         ]
       }
     }
@@ -67,27 +70,28 @@ export default {
       _this.links = _this.links
           .enter().append("line")
           .merge(_this.links)
+          .attr("class", "links")
+          .attr("marker-end", "url(#arrowhead)") //arrow
           .attr("stroke-width", 2)
-          .attr('stroke', function(d){
-            return ( (_this.sourceNode && _this.destNode)
-              && (d.source.name === _this.sourceNode.trim() && d.target.name === _this.destNode.trim())) 
-              ? '#ba1914' 
-              : '#058e02';
-          })
-          
+          .attr('stroke', d => (
+              ((_this.sourceNode && _this.destNode)
+                && (d.source.name === _this.sourceNode.trim() && d.target.name === _this.destNode.trim())) 
+                ? '#ba1914' 
+                : '#058e02'
+          ));
 
       //update nodes
-      _this.nodes = _this.nodes.data(_this.graph.nodes, function(d){return d.name; });
+      _this.nodes = _this.nodes.data(_this.graph.nodes, d => d.name);
       _this.nodes.exit().remove();
       _this.nodes = _this.nodes
             .enter().append("circle")
-            .attr("r", 15)
-            .attr("fill", function(d, i) { return _this.color(i); })
+            .attr("class", "nodes")
+            .attr("r", _this.nodeRadius)
+            .attr("fill", '#2a5eb2')
             .merge(_this.nodes)
             .call(
               d3.drag()
                 .on('start', function(d) {
-
                   if (!d3.event.active)
                     _this.simulation.alphaTarget(0.3).restart();
 
@@ -107,18 +111,19 @@ export default {
                 })
             );
 
-
-      _this.nodelabels = _this.nodelabels.data(_this.graph.nodes, function(d){return d.name; });
+      _this.nodelabels = _this.nodelabels.data(_this.graph.nodes, d => d.name);
       _this.nodelabels.exit().remove();
       _this.nodelabels = _this.nodelabels
          .enter().append("text")
          .merge(_this.nodelabels)
-         .attr("x", function(d){ return d.x; })
-         .attr("y", function(d){ return d.y; })
-         .attr("class", "nodelabel")
-         .attr("stroke", "black")
-         .text(function(d){return d.name;});
-
+         .attr("class", "node-label")
+         .attr("font-size","22px")
+         .attr("textLength", (_this.nodeRadius * 2))
+         .attr("text-anchor", "middle")
+         .attr("letter-spacing", "1px")
+         .attr("stroke", "#fff")
+         .append("tspan")
+         .text(d => d.name);
 
       _this.linklabels = _this.linklabels.data(_this.edges);
       _this.linklabels.exit().remove();
@@ -127,55 +132,47 @@ export default {
                     .merge(_this.linklabels)
                     .attr("font-size","14px")
                     .attr("stroke", "black")
-                    .text( function(d) {  return d.value; });
-
+                    .text(d => d.value);
 
       _this.simulation
         .nodes(_this.graph.nodes)
-        .on("tick", function(){
-          console.log('ticked');
-          _this.links
-            .attr("x1", function(d) { return d.source.x; })
-            .attr("y1", function(d) { return d.source.y; })
-            .attr("x2", function(d) { return d.target.x; })
-            .attr("y2", function(d) { return d.target.y; });
-
-          _this.nodes
-              .attr("cx", function(d) { return d.x; })
-              .attr("cy", function(d) { return d.y; });
-
-          _this.nodelabels
-              .attr("x", function(d) { return d.x; }) 
-              .attr("y", function(d) { return d.y; });
-
-          _this.linklabels
-              .attr("x", function(d) { return (d.source.x + d.target.x)/2; })
-              .attr("y", function(d) { return (d.source.y + d.target.y)/2; });
-
-      });
+        .on("tick", _this.onTick);
 
       _this.simulation
         .force("link")
         .links(_this.edges);
     },
+    onTick(){
+
+      let _this = this;
+
+      this.links
+        .attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
+
+      this.nodes
+          .attr("cx", d=> d.x)
+          .attr("cy", d=> d.y);
+
+      this.nodelabels
+          .attr("x", d => d.x) 
+          .attr("y", d=> d.y + 5);
+
+      this.linklabels
+          .attr("x", d => (d.source.x + d.target.x)/2)
+          .attr("y", d => (d.source.y + d.target.y)/2);
+    },
     loadEdges(){
 
       let _this = this;
 
-      _this.graph.links.forEach(function(element, index){
-      
-        let sourceNode = _this.graph.nodes.filter(function(n) {
-            return n.name === element.source;
-        })[0];
-        
-        let targetNode = _this.graph.nodes.filter(function(n) {
-            return n.name === element.target;
-        })[0];
-
+      _this.graph.links.forEach(function(edge){
         _this.edges.push({
-          source: sourceNode,
-          target: targetNode,
-          value: element.value
+          source: _this.graph.nodes.filter(n => n.name === edge.source)[0],
+          target: _this.graph.nodes.filter(n => n.name === edge.target)[0],
+          value: edge.value
         });
       });
     }
@@ -185,14 +182,33 @@ export default {
     this.loadEdges();
 
     this.svg = d3.select("#graph-container").append("svg").attr("width", "100%").attr("height", "100%");
-    this.links = this.svg.append("g").selectAll(".links"),
+
+
+    //arrow of directed edges
+    this.svg.append('defs').append('marker')
+        .attr("id", "arrowhead")
+        .attr("viewBox", "0 0 10 10")
+        .attr("refX", this.nodeRadius - this.refX)
+        .attr("refY", 5)
+        .attr("orient", "auto")
+        .attr("markerWidth", 10)
+        .attr("markerHeight", 10)
+        .attr("xoverflow", "visible")
+        .append('svg:path')
+        .attr('d', 'M 0 0 L 10 5 L 0 10 z')
+        .attr('fill', '#000')
+        .style('stroke','none');
+
+
+    this.links = this.svg.append("g").selectAll(".links");
     this.nodes = this.svg.append("g").selectAll(".nodes");
-    this.nodelabels = this.svg.selectAll(".nodelabel");
+    this.nodelabels = this.svg.append("g").selectAll(".node-label");
     this.linklabels = this.svg.append("g").selectAll(".link-label");
+    
     this.simulation = d3.forceSimulation()
-        .force("link", d3.forceLink().distance(15).id(d => d.id))
+        .force("link", d3.forceLink().distance(this.linkDistance).id(d => d.id))
         .force('charge', d3.forceManyBody().strength(-400).theta(0)) 
-        .force("collide", d3.forceCollide().radius(100))
+        .force("collide", d3.forceCollide().radius(this.collideRadius))
         .force("center", d3.forceCenter(this.width / 2, this.height / 2));
 
     this.drawGraph();
@@ -239,5 +255,6 @@ a {
 .inputs{
   margin: 5px 10px;
 }
+
 
 </style>

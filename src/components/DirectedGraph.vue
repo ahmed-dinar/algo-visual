@@ -17,13 +17,12 @@ export default {
   name: 'DirectedGraph',
   data(){
     return {
-      nodeRadius: 30,
-      refX: 6,
       linkDistance: 15,
       collideRadius: 100,
       width: 960,
       height: 500,
       simulation: null,
+      arrows: null,
       links: null,
       nodes: null,
       nodelabels: null,
@@ -34,11 +33,11 @@ export default {
       edges: [],
       graph: {
         nodes: [
-          {name: "A"},
-          {name: "B"},
-          {name: "C" },
-          {name: "D"},
-          {name: "E" }
+          {name: "A", radius: 30},
+          {name: "B", radius: 20},
+          {name: "C", radius: 25},
+          {name: "D", radius: 30},
+          {name: "E", radius: 30}
         ],
         links: [
           {source: "A", target: "B", value: "6.6km"},
@@ -50,35 +49,13 @@ export default {
       }
     }
   },
-  computed: {
-
-  },
   methods: {
     updateGrap(){
-      console.log('updating');
       this.drawGraph();
     },
     drawGraph(){
 
-      console.log('updating 2');
-
       let _this = this;
-
-      //update links
-      _this.links = _this.links.data(_this.edges);
-      _this.links.exit().remove();
-      _this.links = _this.links
-          .enter().append("line")
-          .merge(_this.links)
-          .attr("class", "links")
-          .attr("marker-end", "url(#arrowhead)") //arrow
-          .attr("stroke-width", 2)
-          .attr('stroke', d => (
-              ((_this.sourceNode && _this.destNode)
-                && (d.source.name === _this.sourceNode.trim() && d.target.name === _this.destNode.trim())) 
-                ? '#ba1914' 
-                : '#058e02'
-          ));
 
       //update nodes
       _this.nodes = _this.nodes.data(_this.graph.nodes, d => d.name);
@@ -86,7 +63,7 @@ export default {
       _this.nodes = _this.nodes
             .enter().append("circle")
             .attr("class", "nodes")
-            .attr("r", _this.nodeRadius)
+            .attr("r", d => d.radius)
             .attr("fill", '#2a5eb2')
             .merge(_this.nodes)
             .call(
@@ -111,6 +88,46 @@ export default {
                 })
             );
 
+
+      //update links
+      _this.links = _this.links.data(_this.edges);
+      _this.links.exit().remove();
+      _this.links = _this.links
+          .enter().append("path")
+          .merge(_this.links)
+          .attr("class", "links")
+          .attr("stroke-width", 2)
+          .attr('stroke', d => (
+              ((_this.sourceNode && _this.destNode)
+                && (d.source.name === _this.sourceNode.trim() && d.target.name === _this.destNode.trim())) 
+                ? '#ba1914' 
+                : '#058e02'
+          ))
+          .attr("marker-end", d => "url(#marker" + d.id + ")"); //arrow
+
+
+
+      _this.arrows = _this.arrows.data(_this.edges);
+      _this.arrows.exit().remove();
+      _this.arrows = _this.arrows
+          .enter().append("marker")
+          .merge(_this.arrows)
+          .attr("class", "arrow")
+          .attr("id", d => "marker" + d.id)
+          .attr("viewBox", "0 -5 10 10")
+          .attr("refX", 10)
+          .attr("refY", 0)
+          .attr("markerWidth", 10)
+          .attr("markerHeight", 10)
+          .attr("orient", "auto")
+          .append("path")
+          .attr("d", "M0,-5 L10,0 L0,5")
+          .style("stroke", "black")
+          .style("fill", "black")
+          .style("opacity", "1");
+
+
+
       _this.nodelabels = _this.nodelabels.data(_this.graph.nodes, d => d.name);
       _this.nodelabels.exit().remove();
       _this.nodelabels = _this.nodelabels
@@ -118,11 +135,10 @@ export default {
          .merge(_this.nodelabels)
          .attr("class", "node-label")
          .attr("font-size","22px")
-         .attr("textLength", (_this.nodeRadius * 2))
+         .attr("textLength", d => _this.graph.nodes.filter(n => n.name === d.name)[0].radius * 2)
          .attr("text-anchor", "middle")
          .attr("letter-spacing", "1px")
          .attr("stroke", "#fff")
-         .append("tspan")
          .text(d => d.name);
 
       _this.linklabels = _this.linklabels.data(_this.edges);
@@ -146,33 +162,43 @@ export default {
 
       let _this = this;
 
-      this.links
-        .attr("x1", d => d.source.x)
-        .attr("y1", d => d.source.y)
-        .attr("x2", d => d.target.x)
-        .attr("y2", d => d.target.y);
-
-      this.nodes
+      _this.nodes
           .attr("cx", d=> d.x)
           .attr("cy", d=> d.y);
 
-      this.nodelabels
+      
+      _this.links.attr("d", _this.getArrowOffset);
+      
+      _this.nodelabels
           .attr("x", d => d.x) 
           .attr("y", d=> d.y + 5);
 
-      this.linklabels
+      _this.linklabels
           .attr("x", d => (d.source.x + d.target.x)/2)
           .attr("y", d => (d.source.y + d.target.y)/2);
+    },
+    //https://stackoverflow.com/a/16754080
+    getArrowOffset(d){
+      let diffX = d.target.x - d.source.x;
+      let diffY = d.target.y - d.source.y;
+
+      let pathLength = Math.sqrt((diffX * diffX) + (diffY * diffY));
+
+      let offsetX = (diffX * d.target.radius) / pathLength;
+      let offsetY = (diffY * d.target.radius) / pathLength;
+
+      return "M" + d.source.x + "," + d.source.y + "L" + (d.target.x - offsetX) + "," + (d.target.y - offsetY);
     },
     loadEdges(){
 
       let _this = this;
 
-      _this.graph.links.forEach(function(edge){
+      _this.graph.links.forEach(function(edge, indx){
         _this.edges.push({
           source: _this.graph.nodes.filter(n => n.name === edge.source)[0],
           target: _this.graph.nodes.filter(n => n.name === edge.target)[0],
-          value: edge.value
+          value: edge.value,
+          id: indx + 5
         });
       });
     }
@@ -183,23 +209,7 @@ export default {
 
     this.svg = d3.select("#graph-container").append("svg").attr("width", "100%").attr("height", "100%");
 
-
-    //arrow of directed edges
-    this.svg.append('defs').append('marker')
-        .attr("id", "arrowhead")
-        .attr("viewBox", "0 0 10 10")
-        .attr("refX", this.nodeRadius - this.refX)
-        .attr("refY", 5)
-        .attr("orient", "auto")
-        .attr("markerWidth", 10)
-        .attr("markerHeight", 10)
-        .attr("xoverflow", "visible")
-        .append('svg:path')
-        .attr('d', 'M 0 0 L 10 5 L 0 10 z')
-        .attr('fill', '#000')
-        .style('stroke','none');
-
-
+    this.arrows = this.svg.append("defs").selectAll(".arrow");
     this.links = this.svg.append("g").selectAll(".links");
     this.nodes = this.svg.append("g").selectAll(".nodes");
     this.nodelabels = this.svg.append("g").selectAll(".node-label");

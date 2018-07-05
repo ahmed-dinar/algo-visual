@@ -14,7 +14,7 @@
 import * as d3 from 'd3';
 
 export default {
-  name: 'HelloWorld',
+  name: 'DirectedGraph',
   data(){
     return {
       color: d3.scaleOrdinal(d3.schemeCategory20),

@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <h1>Algo Visual</h1>
+    <h1 class="text-center">Algo Visual</h1>
     <router-view/>
   </div>
 </template>
@@ -12,21 +12,31 @@ export default {
 </script>
 
 <style>
+
 #app {
-  font-family: 'Raleway', 'Avenir', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 0px;
+  
 }
 
 
 body{
-  font-family: 'Raleway', sans-serif;
+  font-family: 'Roboto', 'Avenir', Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  color: #2c3e50;
+}
+
+input[type="text" i] {
+    padding: 1px 5px;
 }
 
 
+.form-check-input{
+  width: 18px;
+  height: 18px;
+      margin-top: .2rem;
+    margin-left: -1.4rem;
 
+}
 
 </style>

@@ -1,11 +1,27 @@
 <template>
-  <div class="graph-area">
-    <div class="inputs">
-      <input type="text"  v-model="sourceNode" placeholder="Source">
-      <input type="text"  v-model="destNode" placeholder="Destination">
-      <button type="button" class="btn btn-outline-primary btn-sm" v-on:click="updateGrap">Update Edge</button>
+  <div class="graph-area container-fluid">
+    <div class="row">
+      <div class="col-3">
+        <div class="tools-container">
+          <div class="form-group">
+            <input type="text"  v-model="sourceNode" placeholder="Source">
+          </div>
+          <div class="form-group">
+            <input type="text"  v-model="destNode" placeholder="Destination">
+          </div>
+          <div class="form-group">
+            <button type="button" class="btn btn-outline-primary btn-sm" v-on:click="updateGrap">Update Edge</button>
+          </div>
+          <div class="form-group form-check isDirected">
+            <input type="checkbox" v-model="isDirected" v-on:change="drawGraph()" class="form-check-input" id="isDirected">
+            <label class="form-check-label" for="isDirected">Directed Edge</label>
+          </div>
+        </div>
+      </div>
+      <div class="col-9">
+          <div id="graph-container"></div>
+      </div>
     </div>
-    <div id="graph-container"></div>
   </div>
 </template>
 
@@ -18,10 +34,12 @@ export default {
   name: 'Graph',
   data(){
     return {
+      activeEdge: null,
+      isDirected: false,
       linkDistance: 5,
       collideRadius: 100,
-      width: 960,
-      height: 500,
+      width: 1000,
+      height: 700,
       simulation: null,
       arrows: null,
       links: null,
@@ -68,12 +86,13 @@ export default {
       theEdge = theEdge[0];
 
       d3.selectAll("#activeEdge").remove();
+      _this.activeEdge = null;
 
       theEdge.distance = _this.pointDistance(theEdge);
 
 
       //https://jaketrent.com/post/animating-d3-line/
-        _this.svg.append('path')
+      _this.activeEdge = _this.svg.append('path')
           .datum(_this.pointOffset(theEdge))
           .attr("d", d3.line().x(d => d.x).y(d => d.y))
           .attr("id", "activeEdge")
@@ -84,14 +103,16 @@ export default {
           .transition()
           .duration(1500)
           .attr('stroke-dashoffset', 0)
-
-      console.log(theEdge);
+          .on('end', () => {
+            console.log('hola');
+          });
 
       setTimeout(() => {
         d3.selectAll("#activeEdge").remove();
+        _this.activeEdge = null;
       }, 5000);
 
-      //this.drawGraph();
+     // this.drawGraph();
     },
     drawGraph(){
 
@@ -134,37 +155,40 @@ export default {
       _this.links.exit().remove();
       _this.links = _this.links
           .enter().append("path")
-          .merge(_this.links)
           .attr("class", "links")
           .attr("stroke-width", 2)
+          
           .attr('stroke', d => (
               ((_this.sourceNode && _this.destNode)
                 && (d.source.name === _this.sourceNode.trim() && d.target.name === _this.destNode.trim())) 
                 ? '#ba1914' 
                 : '#058e02'
-          ))
-          .attr("marker-end", d => "url(#marker" + d.id + ")"); //arrow
+          )).merge(_this.links)
+          .attr("marker-end", d => "url(#marker" + d.id + ")");
 
+      if( !_this.isDirected ){
+        _this.links.attr("marker-end", null);
+      }
 
-
+      //arrows
       _this.arrows = _this.arrows.data(_this.edges);
       _this.arrows.exit().remove();
       _this.arrows = _this.arrows
-          .enter().append("marker")
-          .merge(_this.arrows)
-          .attr("class", "arrow")
-          .attr("id", d => "marker" + d.id)
-          .attr("viewBox", "0 -5 10 10")
-          .attr("refX", 10)
-          .attr("refY", 0)
-          .attr("markerWidth", 10)
-          .attr("markerHeight", 10)
-          .attr("orient", "auto")
-          .append("path")
-          .attr("d", "M0,-5 L10,0 L0,5")
-          .style("stroke", "black")
-          .style("fill", "black")
-          .style("opacity", "1");
+            .enter().append("marker")
+            .attr("class", "arrow")
+            .attr("id", d => "marker" + d.id)
+            .attr("viewBox", "0 -5 10 10")
+            .attr("refX", 7)
+            .attr("refY", 0)
+            .attr("markerWidth", 7)
+            .attr("markerHeight", 7)
+            .attr("orient", "auto")
+            .append("path")
+            .attr("d", "M0,-5 L7,0 L0,5")
+            .style("stroke", "black")
+            .style("fill", "black")
+            .style("opacity", "1")
+            .merge(_this.arrows);
 
 
 
@@ -192,7 +216,10 @@ export default {
 
       _this.simulation
         .nodes(_this.graph.nodes)
-        .on("tick", _this.onTick);
+        .on("tick", _this.onTick)
+        .on("end", () => {
+          console.log('tick end');
+        });
 
       _this.simulation
         .force("link")
@@ -247,8 +274,14 @@ export default {
         });
       });
     },
-    initiatGraph(){
-      this.svg = d3.select("#graph-container").append("svg").attr("width", this.width).attr("height", this.height);
+    initiateGraph(){
+
+      this.svg = d3.select("#graph-container")
+        .append("svg")
+        .attr("width", this.width)
+        .attr("height", this.height)
+        .attr("id", "graph-svg")
+        .attr("margin", "0px auto");
 
       this.arrows = this.svg.append("defs").selectAll(".arrow");
       this.links = this.svg.append("g").selectAll(".links");
@@ -265,7 +298,7 @@ export default {
   },
   mounted(){
     this.loadEdges();
-    this.initiatGraph();
+    this.initiateGraph();
     this.drawGraph();
   }
 }
@@ -297,19 +330,22 @@ a {
   border: 1px solid #ccc;
   margin: 0;
   padding: 0;
-  position: relative;
 }
 
 #graph-container{
   border: 1px solid #ccc;
-  width: 960px;
-/*   height: 500px; */
   margin: 0 auto;
+  text-align: center;
 }
 
-.inputs{
-  margin: 5px 10px;
+.tools-container{
+  width: 50%;
+  margin: 0 auto;
+  padding-top: 20px;
 }
 
+.isDirected .form-check-label{
+  font-weight: bold;
+}
 
 </style>

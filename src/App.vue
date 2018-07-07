@@ -21,8 +21,8 @@ export default {
 
 
 body{
-  font-family: 'Roboto', 'Avenir', Helvetica, Arial, sans-serif;
-  font-size: 16px;
+  font-family: 'Open Sans', Helvetica, Arial, sans-serif;
+  font-size: 14px;
   color: #2c3e50;
 }
 

@@ -5,6 +5,7 @@ import DirectedGraph from '@/components/DirectedGraph';
 import HomeComponent from '@/components/HomeComponent';
 import EdgeOffset from '@/components/EdgeOffset';
 import Graph from '@/components/Graph';
+import EditGraph from '@/components/EditGraph';
 
 Vue.use(Router);
 
@@ -35,6 +36,11 @@ export default new Router({
       path: '/graph/simulate',
       name: 'Graph',
       component: Graph
+    },
+    {
+      path: '/graph/edit',
+      name: 'EditGraph',
+      component: EditGraph
     }
   ]
 });

@@ -1,7 +1,7 @@
 <template>
   <div class="graph-area container-fluid">
     <div class="row">
-      <div class="col-3">
+      <div class="col-3 tools">
         <div class="tools-container">
           <div class="form-group">
             <input type="text"  v-model="sourceNode" placeholder="Source">
@@ -57,8 +57,8 @@ export default {
     return {
       isZoom: false,
       isAddNode: false,
-      isVertexLabel: true,
-      isLinkLabel: true,
+      isVertexLabel: false,
+      isLinkLabel: false,
       editable: false,
       selectedEdge: null,
       selectedNode: null,
@@ -66,7 +66,7 @@ export default {
       activeEdge: null,
       isDirected: false,
       linkDistance: 5,
-      collideRadius: 60,
+      collideRadius: 70,
       width: 1000,
       height: 560,
       simulation: null,
@@ -291,7 +291,7 @@ export default {
          .attr("class", "node-label")
          .attr("text-anchor", "middle")
          .attr("stroke", "white")
-         .text(d => d.name + "A");
+         .text(d => d.name);
 
       _this.vertexlabels = _this.vertexlabels.data(!_this.isVertexLabel ? [] : _this.graph.nodes, d => d.name);
       _this.vertexlabels.exit().remove();
@@ -531,13 +531,13 @@ a {
 
 
 .graph-area{
-  border: 1px solid #ccc;
+  border: none;
   margin: 0;
   padding: 0;
 }
 
 #graph-container{
-  border: 1px solid #ccc;
+  border: none;
   margin: 0 auto;
   text-align: center;
 }
@@ -545,7 +545,11 @@ a {
 .tools-container{
   width: 50%;
   margin: 0 auto;
-  padding-top: 20px;
+  padding-top: 15px;
+}
+
+.tools{
+  border-right: 1px solid #ccc;
 }
 
 .isDirected .form-check-label{

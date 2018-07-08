@@ -1,6 +1,8 @@
 <template>
   <div id="app">
-    <h1 class="text-center">Algo Visual</h1>
+    <div class="container-fluid header">
+      <h3 class="text-center heading">Algo Visual</h3>
+    </div>
     <router-view/>
   </div>
 </template>
@@ -21,7 +23,7 @@ export default {
 
 
 body{
-  font-family: 'Open Sans', Helvetica, Arial, sans-serif;
+  font-family: 'Noto Sans',  Helvetica, Arial, sans-serif;
   font-size: 14px;
   color: #2c3e50;
 }
@@ -37,6 +39,20 @@ input[type="text" i] {
       margin-top: .2rem;
     margin-left: -1.4rem;
 
+}
+
+.heading{
+  font-family: 'Satisfy', cursive;
+  padding-top: 5px;
+  padding-bottom: 10px;
+  font-weight: 600;
+  color: #464649;
+}
+
+.header{
+  background: #fff;
+      box-shadow: 0 2px 3px hsla(0,0%,7%,.1), 0 0 0 1px hsla(0,0%,7%,.1);
+  border: none;
 }
 
 </style>

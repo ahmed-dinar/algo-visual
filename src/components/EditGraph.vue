@@ -1,7 +1,7 @@
 <template>
-  <div class="graph-area container-fluid">
+  <div class="container-fluid">
     <div class="row">
-      <div class="col-3 tools">
+      <div class="col-2 tools">
         <div class="tools-container">
           <div class="form-group">
             <input type="text"  v-model="sourceNode" placeholder="Source">
@@ -10,35 +10,57 @@
             <input type="text"  v-model="destNode" placeholder="Destination">
           </div>
           <div class="form-group">
-            <button type="button" class="btn btn-outline-primary btn-sm" v-on:click="traverseGrap">Update Edge</button>
+            <button type="button" class="btn btn-outline-primary btn-sm" v-on:click="traverseGrap">GO!</button>
           </div>
-          <div class="form-group form-check isDirected">
-            <input type="checkbox" v-model="isDirected" v-on:change="drawGraph()" class="form-check-input" id="isDirected">
-            <label class="form-check-label" for="isDirected">Directed Graph</label>
-          </div>
-          <div class="form-group form-check isDirected">
-            <input type="checkbox" v-model="editable" v-on:change="editableChange()" class="form-check-input" id="editable">
-            <label class="form-check-label" for="editable">Edit Graph</label>
-          </div>
-          <div class="form-group form-check isDirected">
-            <input type="checkbox" v-model="isLinkLabel" v-on:change="drawGraph()" class="form-check-input" id="isLinkLabel">
-            <label class="form-check-label" for="isLinkLabel">Edge Label</label>
-          </div>
-          <div class="form-group form-check isDirected">
-            <input type="checkbox" v-model="isVertexLabel" v-on:change="drawGraph()" class="form-check-input" id="isVertexLabel">
-            <label class="form-check-label" for="isVertexLabel">Node Label</label>
-          </div>
-          <div class="form-group form-check isDirected">
-            <input type="checkbox" v-model="isAddNode" class="form-check-input" id="isAddNode">
-            <label class="form-check-label" for="isAddNode">Add Node</label>
-          </div>
-          <div class="form-group form-check isDirected">
-            <input type="checkbox" v-model="isZoom" v-on:change="toggleZoom()" class="form-check-input" id="isZoom">
-            <label class="form-check-label" for="isZoom">Zoom</label>
+
+
+          <div class="tool-options">
+
+
+            <toggle-button :value="true"
+            :labels="{checked: 'ZOOM', unchecked: 'ZOOM'}"
+            :color="{checked: '#4aba6a', unchecked: '#BFCBD9'}"
+            :width="63"
+            @change="toggleZoom"
+            v-model="isZoom"/>
+
+            <div class="custom-control custom-checkbox">
+              <input type="checkbox" v-model="editable" v-on:change="editableChange()" class="custom-control-input" id="editable">
+              <label class="custom-control-label" for="editable">Edit Graph</label>
+            </div>
+            <transition
+              :duration="500"
+              name="custom-classes-transition"
+              enter-active-class="animated bounceIn"
+              leave-active-class="animated bounceOut"
+            >
+              <div class="edit-tools" v-if="editable">
+                <div class="custom-control custom-checkbox">
+                  <input type="checkbox" v-model="isAddNode" class="custom-control-input" id="isAddNode">
+                  <label class="custom-control-label" for="isAddNode">Add Node</label>
+                </div>
+                <div class="custom-control custom-checkbox">
+                  <input type="checkbox" v-model="isAddEdge" v-on:change="addEdgeChange()" class="custom-control-input" id="isAddEdge">
+                  <label class="custom-control-label" for="isAddEdge">Add Edge</label>
+                </div>
+                <div class="custom-control custom-checkbox">
+                  <input type="checkbox" v-model="isDirected" v-on:change="drawGraph()" class="custom-control-input" id="isDirected">
+                  <label class="custom-control-label" for="isDirected">Directed Graph</label>
+                </div>
+                <div class="custom-control custom-checkbox">
+                  <input type="checkbox" v-model="isLinkLabel" v-on:change="drawGraph()" class="custom-control-input" id="isLinkLabel">
+                  <label class="custom-control-label" for="isLinkLabel">Edge Label</label>
+                </div>
+                <div class="custom-control custom-checkbox">
+                  <input type="checkbox" v-model="isVertexLabel" v-on:change="drawGraph()" class="custom-control-input" id="isVertexLabel">
+                  <label class="custom-control-label" for="isVertexLabel">Node Label</label>
+                </div>
+              </div>
+            </transition>
           </div>
         </div>
       </div>
-      <div class="col-9">
+      <div class="col-10">
           <div id="graph-container"></div>
       </div>
     </div>
@@ -56,6 +78,7 @@ export default {
   data(){
     return {
       isZoom: false,
+      isAddEdge: false,
       isAddNode: false,
       isVertexLabel: false,
       isLinkLabel: false,
@@ -123,7 +146,9 @@ export default {
 
       let theEdge = _this.edges.filter(e => e.source.name === _this.sourceNode.trim() && e.target.name === _this.destNode.trim());
 
+
       if( !theEdge.length ){
+        this.$noty.error(`No edge found from ${_this.sourceNode} to ${_this.destNode}`, { timeout: 5000 });
         return;
       }
       theEdge = theEdge[0];
@@ -159,8 +184,16 @@ export default {
     },
     editableChange(){
       if(!this.editable){
+        this.isAddNode = false;
         this.selectedEdge = null;
         this.selectedNode = null;
+        this.drawGraph();
+      }
+    },
+    addEdgeChange(){
+      if(!this.isAddEdge){
+        this.selectedNode = null;
+        this.destNode = null;
         this.drawGraph();
       }
     },
@@ -183,7 +216,7 @@ export default {
 
       let _this = this;
 
-      if( !this.editable ) return;
+      if( !this.editable || !this.isAddEdge ) return;
 
       if( !this.selectedNode ){
         this.selectedNode = d;
@@ -200,7 +233,7 @@ export default {
       }
 
       if( this.edges.filter(link => _this.isSameEdge(link, { source: this.selectedNode, target: d }) ).length ){
-        console.log('cant create more that one edge');
+        this.$noty.warning("Can't create more that one edge", { timeout: 0 });
         return;
       }
       
@@ -214,13 +247,13 @@ export default {
       this.loadEdgeLabels(true);
       
       this.selectedNode = null;
-      this.drawGraph();
+      this.drawGraph(true);
     },
     isSameEdge(a, b){
       return (a.source.name === b.source.name && a.target.name === b.target.name) ||
       (a.source.name === b.target.name && a.target.name === b.source.name);
     },
-    drawGraph(refreshGraph){
+    drawGraph(makeTick){
 
       let _this = this;
 
@@ -231,14 +264,15 @@ export default {
             .enter().append("circle")
             .attr("class", "nodes")
             .attr("r", d => d.radius)
-            .attr("fill", '#2a5eb2')
+            .attr("title", d => d.name)
+            .attr("fill", 'black')
             .attr("stroke-width", 2)
             .merge(_this.nodes)
             .on("mousedown", _this.nodeMousedown)
             .call(d3.drag()
                 .on('start', function(d) {
                   if (!d3.event.active)
-                    _this.simulation.alphaTarget(0.3).restart();
+                    _this.simulation.alphaTarget(0.9).restart();
 
                   d.fx = d.x;
                   d.fy = d.y;
@@ -251,8 +285,8 @@ export default {
                   if (!d3.event.active) 
                     _this.simulation.alphaTarget(0);
                         
-                  d.fx = null;
-                  d.fy = null;
+                  //d.fx = null;
+                  //d.fy = null;
                 }));
 
       _this.nodes.attr("stroke", function(d) {
@@ -268,7 +302,6 @@ export default {
           .attr("class", "links")
           .attr("stroke-width", 3)
           .merge(_this.links)
-          //.attr("marker-end", d => "url(#marker" + d.id + ")")
           .attr("marker-end", "url(#markerArrow")
           .on("mousedown", _this.linkMousedown);
 
@@ -279,7 +312,7 @@ export default {
       _this.links.attr("stroke", function(d) {
         console.log('_this.selectedEdge');
         console.log(_this.selectedEdge);
-        return (_this.selectedEdge && _this.isSameEdge(_this.selectedEdge, d))  ? 'red' : 'green';
+        return (_this.selectedEdge && _this.isSameEdge(_this.selectedEdge, d))  ? 'red' : 'black';
       });
 
 
@@ -325,8 +358,14 @@ export default {
       _this.simulation
         .force("link")
         .links(_this.edges);
-    
-      _this.simulation.restart();
+
+
+      if(makeTick){
+        _this.simulation.alpha(0.1).restart();
+      }else{
+        _this.simulation.restart();
+      }
+
     },
     onTick(){
 
@@ -403,9 +442,9 @@ export default {
         .attr("margin", "0px auto");
         
     if( this.isZoom ){
-      this.svg = this.svg.call(d3.zoom().on("zoom",  () => {
-            this.svg.attr("transform", d3.event.transform);
-         }));
+      this.svg = this.svg.call(d3.zoom().on("zoom", () => {
+        this.svg.attr("transform", d3.event.transform);
+      }));
     }
     this.svg = this.svg.append("g");
 
@@ -442,7 +481,7 @@ export default {
       
       this.simulation = d3.forceSimulation()
           .force("link", d3.forceLink().distance(this.linkDistance).id(d => d.id))
-          .force('charge', d3.forceManyBody().strength(0).theta(0)) 
+          .force('charge', d3.forceManyBody().strength(100).theta(0)) 
           .force("collide", d3.forceCollide().radius(this.collideRadius))
           .force("center", d3.forceCenter(this.width / 2, this.height / 2));
 
@@ -456,8 +495,15 @@ export default {
 
       this.selectedEdge = null;
       this.selectedNode = null;
-      let m = d3.mouse(this.svg.node());
       let len = this.graph.nodes.length;
+
+      if( len >= 15 ){
+        this.$noty.warning("Can't create more that 15 nodes", { timeout: 0 });
+        return;
+      }
+
+      let m = d3.mouse(this.svg.node());
+      
 
       this.graph.nodes.push({
         "name": len > 0 ? alphabet[alphabet.indexOf(this.graph.nodes[len-1].name)+1] : alphabet[0],
@@ -529,31 +575,26 @@ a {
   color: #42b983;
 }
 
-
-.graph-area{
-  border: none;
-  margin: 0;
-  padding: 0;
-}
-
-#graph-container{
-  border: none;
-  margin: 0 auto;
-  text-align: center;
-}
-
 .tools-container{
-  width: 50%;
+  width: 80%;
   margin: 0 auto;
   padding-top: 15px;
+  margin-left: 5px;
 }
 
 .tools{
   border-right: 1px solid #ccc;
 }
 
-.isDirected .form-check-label{
-  font-weight: bold;
+.edit-tools{
+  padding-left: 10px;
 }
+
+.tool-options .custom-control-label{
+/*   font-weight: 600; */
+}
+
+
+
 
 </style>

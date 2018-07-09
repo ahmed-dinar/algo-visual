@@ -17,17 +17,21 @@
           <div class="tool-options">
 
 
-            <toggle-button :value="true"
+            <toggle-button
             :labels="{checked: 'ZOOM', unchecked: 'ZOOM'}"
-            :color="{checked: '#4aba6a', unchecked: '#BFCBD9'}"
+            :color="{checked: '#1c67bc', unchecked: '#82868c'}"
             :width="63"
             @change="toggleZoom"
-            v-model="isZoom"/>
+            v-model="isZoom"/><br>
 
-            <div class="custom-control custom-checkbox">
-              <input type="checkbox" v-model="editable" v-on:change="editableChange()" class="custom-control-input" id="editable">
-              <label class="custom-control-label" for="editable">Edit Graph</label>
-            </div>
+            
+
+            <toggle-button
+            :labels="{checked: 'EDIT', unchecked: 'EDIT'}"
+            :color="{checked: '#1c67bc', unchecked: '#82868c'}"
+            :width="63"
+            @change="editableChange"
+            v-model="editable"/>
             <transition
               :duration="500"
               name="custom-classes-transition"

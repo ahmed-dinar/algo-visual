@@ -73,6 +73,7 @@ input[type="text" i] {
 
 }
 
+/* boostrap */
 
 .form-check-input{
   width: 18px;
@@ -83,17 +84,17 @@ input[type="text" i] {
 
 .navbar-brand{
   font-family: 'Megrim', cursive;
-  font-weight: 600;
-  color: #2d3239;
-  font-size: 26px;
+  font-weight: 600 !important;
+  color: #2d3239 !important;
+  font-size: 1.5rem !important;
 }
 
 .navbar-brand img{
-  margin-top: 2px;
+  margin-top: 0px;
 }
 
 .navbar{
-  padding: .1rem 1rem;
+  padding: 0rem 1rem !important;
 }
 
 .nav-container{
@@ -108,9 +109,6 @@ input[type="text" i] {
 }
 
 
-
-
-/* boostrap */
 .custom-control-input:focus ~ .custom-control-label::before {
   box-shadow: none;
 }
@@ -123,10 +121,6 @@ input[type="text" i] {
   box-shadow: 0 2px 2px -2px rgba(0,0,0,.2);
   margin-bottom: 1px;
   background: #fff;
-}
-
-.navbar-brand{
-  margin-right: 80px;
 }
 
 .card-link{

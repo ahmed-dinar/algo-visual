@@ -78,20 +78,21 @@ import { alphabet } from '../assets/helpers';
 let graphData = require("../assets/data.json")
 
 export default {
-  name: 'Graph',
+  name: 'MultiEdge',
   data(){
     return {
+      linkStrokeWidth: 1,
       isZoom: false,
       isAddEdge: false,
       isAddNode: false,
       isVertexLabel: false,
-      isLinkLabel: true,
+      isLinkLabel: false,
       editable: false,
       selectedEdge: null,
       selectedNode: null,
       selectedTargetNode: null,
       activeEdge: null,
-      isDirected: false,
+      isDirected: true,
       linkDistance: 5,
       collideRadius: 70,
       width: 1000,
@@ -176,7 +177,7 @@ export default {
           .duration(1500)
           .attr('stroke-dashoffset', 0)
           .on('end', () => {
-            console.log('hola');
+          //  console.log('hola');
           });
 
       setTimeout(() => {
@@ -202,7 +203,7 @@ export default {
       }
     },
     linkMousedown(d){
-      console.log('linkMousedown');
+      //console.log('linkMousedown');
       let _this = this;
 
       if( !this.editable ) return;
@@ -230,7 +231,7 @@ export default {
 
       //if same node, deselect
       if( this.selectedNode.name == d.name ){
-        console.log('same node');
+        //console.log('same node');
         this.selectedNode = null;
         this.drawGraph();
         return;
@@ -304,9 +305,9 @@ export default {
       _this.links = _this.links
           .enter().append("path")
           .attr("class", "links")
-          .attr("stroke-width", 3)
+          .attr("stroke-width", _this.linkStrokeWidth)
+          .attr("fill", "none")
           .merge(_this.links)
-          .attr("id", (d,i) => `link-${i}`)
           .attr("marker-end", "url(#markerArrow")
           .on("mousedown", _this.linkMousedown);
 
@@ -315,8 +316,6 @@ export default {
       }
 
       _this.links.attr("stroke", function(d) {
-        console.log('_this.selectedEdge');
-        console.log(_this.selectedEdge);
         return (_this.selectedEdge && _this.isSameEdge(_this.selectedEdge, d))  ? 'red' : 'black';
       });
 
@@ -343,27 +342,21 @@ export default {
          .text(d => "Vertex - " + d.name);
 
 
-      //edge labels
+      //link labels
       _this.linklabels = _this.linklabels.data(_this.isLinkLabel ? _this.edgeLabels : []);
       _this.linklabels.exit().remove();
       _this.linklabels = _this.linklabels
                     .enter().append("text")
-                    .style("pointer-events", "none")
-                    .attr("class", "link-label");
-                    
-      _this.linklabels.append('textPath')
-        .attr('xlink:href',(d,i) => `#link-${i}`)
-        .attr("startOffset", "50%")
-        .style("pointer-events", "none")
-        .text(d => d.value);
-
-
+                    .attr("font-size","14px")
+                    .attr("stroke", "black")
+                    .text(d => d.value)
+                    .merge(_this.linklabels);
 
       _this.simulation
         .nodes(_this.graph.nodes)
         .on("tick", _this.onTick)
         .on("end", () => {
-          console.log('tick end');
+          //console.log('tick end');
         });
 
       _this.simulation
@@ -387,7 +380,10 @@ export default {
           .attr("cy", d=> d.y);
 
       
-      _this.links.attr("d", _this.getArrowOffset);
+     // _this.links.attr("d", _this.getArrowOffset);
+     _this.links.attr("d", d => {
+        return _this.arcOffset(d);
+     });
       
       _this.nodelabels
           .attr("x", d => d.x) 
@@ -397,17 +393,9 @@ export default {
           .attr("x", d => d.x) 
           .attr("y", d => d.y - d.radius - 3);
 
-      //http://bl.ocks.org/jhb/5955887
-      _this.linklabels.attr('transform', function(d){
-          if (d.target.x < d.source.x){
-            let bbox = this.getBBox();
-            let rx = bbox.x+bbox.width/2;
-            let ry = bbox.y+bbox.height/2;
-            return `rotate(180 ${rx} ${ry})`;
-          }
-          return `rotate(0)`;
-      }).attr("dy", -5);
-  
+      _this.linklabels
+            .attr("x", d => (d.source.x + d.target.x)/2)
+            .attr("y", d => (d.source.y + d.target.y)/2);
     },
     pointDistance(d){
       let diffX = d.target.x - d.source.x;
@@ -426,18 +414,130 @@ export default {
 
       return "M" + d.source.x + "," + d.source.y + "L" + (d.target.x - offsetX) + "," + (d.target.y - offsetY);
     },
+    arcOffset(d){
+      
+      var sourceX = d.source.x;
+      var sourceY = d.source.y;
+      var targetX = d.target.x;
+      var targetY = d.target.y;
+
+      var theta = Math.atan((targetX - sourceX) / (targetY - sourceY));
+      var phi = Math.atan((targetY - sourceY) / (targetX - sourceX));
+
+      var sinTheta = d.source.radius * Math.sin(theta);
+      var cosTheta = d.source.radius * Math.cos(theta);
+      var sinPhi = d.target.radius * Math.sin(phi);
+      var cosPhi = d.target.radius * Math.cos(phi);
+
+      // Set the position of the link's end point at the source node
+      // such that it is on the edge closest to the target node
+      if (d.target.y > d.source.y) {
+          sourceX = sourceX + sinTheta;
+          sourceY = sourceY + cosTheta;
+      }
+      else {
+          sourceX = sourceX - sinTheta;
+          sourceY = sourceY - cosTheta;
+      }
+
+      // Set the position of the link's end point at the target node
+      // such that it is on the edge closest to the source node
+      if (d.source.x > d.target.x) {
+          targetX = targetX + cosPhi;
+          targetY = targetY + sinPhi;    
+      }
+      else {
+          targetX = targetX - cosPhi;
+          targetY = targetY - sinPhi; 
+      }
+
+      // Draw an arc between the two calculated points
+      var dx = targetX - sourceX,
+          dy = targetY - sourceY,
+          dr = Math.sqrt(dx * dx + dy * dy);
+
+      let drx = dr;
+      let dry = dr;
+
+
+      if (d.count > 1) {
+        var siblings = this.getSiblingLinks(d.nickname);
+        drx = drx/(1 + (1/d.count) * (siblings.indexOf(d.id)));
+        dry = dry/(1 + (1/d.count) * (siblings.indexOf(d.id)));
+      }
+
+
+
+      return "M" + sourceX + "," + sourceY + "A" + drx + "," + dry + " 0 0,1 " + targetX + "," + targetY;
+
+    },
+    arcPath(leftHand, d) {
+
+      let x1 = leftHand ? d.source.x : d.target.x;
+      let y1 = leftHand ? d.source.y : d.target.y;
+      let x2 = leftHand ? d.target.x : d.source.x;
+      let y2 = leftHand ? d.target.y : d.source.y;
+      let dx = x2 - x1;
+      let dy = y2 - y1;
+      let dr = Math.sqrt(dx * dx + dy * dy);
+
+      let drx = dr;
+      let dry = dr;
+      let sweep = leftHand ? 0 : 1;
+      let siblingCount = d.count;
+      let xRotation = 0;
+      let largeArc = 0;
+
+      if (siblingCount > 1) {
+        var siblings = this.getSiblingLinks(d.nickname);
+        drx = drx/(1 + (1/siblingCount) * (siblings.indexOf(d.id)));
+        dry = dry/(1 + (1/siblingCount) * (siblings.indexOf(d.id)));
+      }
+
+      return "M" + x1 + "," + y1 + "A" + drx + ", " + dry + " " + xRotation + ", " + largeArc + ", " + sweep + " " + x2 + "," + y2;
+    },
+    getSiblingLinks(nickname){
+      return this.edges.filter(edge => edge.nickname === nickname).map(edge => edge.id);
+    },
     loadEdges(){
 
       let _this = this;
 
-      _this.graph.links.forEach(function(edge, indx){
-        _this.edges.push({
+      let map = new Map();
+
+      _this.graph.links.forEach((edge, indx) => {
+
+        let newEdge = {
           source: _this.graph.nodes.filter(n => n.name === edge.source)[0],
           target: _this.graph.nodes.filter(n => n.name === edge.target)[0],
           value: edge.value,
           id: indx + 5
-        });
+        };
+
+        let a = _this.linkString(newEdge, edge.source < edge.target);
+        newEdge.nickname = a;
+
+
+        if( map.has(a)   ){
+          map.set(a, map.get(a) + 1);
+        }
+        else{
+          map.set(a, 1);
+        }
+
+        _this.edges.push(newEdge);
       });
+
+      _this.edges = _this.edges.map( function(edge){
+        edge.count = map.get(edge.nickname);
+        return edge;
+      });
+
+     // console.log(_this.edges);
+  
+    },
+    linkString(link, rev){
+      return rev ? `${link.source.name}${link.target.name}` : `${link.target.name}${link.source.name}`;
     },
     loadEdgeLabels(update){
       let _this = this;
@@ -480,8 +580,8 @@ export default {
             .attr("class", "arrow")
             .attr("id", "markerArrow")
             .attr("viewBox", "0 -5 10 10")
-            .attr("refX", 5)
-            .attr("refY", 0)
+            .attr("refX", 15)
+            .attr("refY", -1)
             .attr("markerWidth", 5)
             .attr("markerHeight", 5)
             .attr("orient", "auto")

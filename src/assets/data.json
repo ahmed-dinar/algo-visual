@@ -1,17 +1,18 @@
 {
   "nodes": [
-    {"name": "A", "radius": 18},
+    {"name": "A", "radius": 10},
     {"name": "B", "radius": 18},
-    {"name": "C", "radius": 18},
+    {"name": "C", "radius": 25},
     {"name": "D", "radius": 18},
-    {"name": "E", "radius": 18},
+    {"name": "E", "radius": 30},
     {"name": "F", "radius": 18}
   ],
   "links": [
-    {"source": "B", "target": "A", "value": "6.6km"},
+    {"source": "B", "target": "A", "value": "6.6 km"},
+    {"source": "A", "target": "B", "value": "6.6 km"},
     {"source": "B", "target": "C", "value": "11km"},
     {"source": "D", "target": "C", "value": "8.6 km"},
-    {"source": "D", "target": "E", "value": "12 km"},
+    {"source": "E", "target": "D", "value": "13 km"},
     {"source": "A", "target": "E", "value": "4.7 km"},
     {"source": "C", "target": "E", "value": "4.9 km"}
   ]

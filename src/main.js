@@ -20,6 +20,8 @@ import 'particles.js';
 
 Vue.config.productionTip = false;
 
+
+
 if(!window.progressbar){
   window.progressbar = NProgress;
 }

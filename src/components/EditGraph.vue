@@ -48,6 +48,10 @@
                   <label class="custom-control-label" for="isAddEdge">Add Edge</label>
                 </div>
                 <div class="custom-control custom-checkbox">
+                  <input type="checkbox" v-model="multiEdge" v-on:change="drawGraph()" class="custom-control-input" id="multiEdge">
+                  <label class="custom-control-label" for="multiEdge">Multiple Edge</label>
+                </div>
+                <div class="custom-control custom-checkbox">
                   <input type="checkbox" v-model="isDirected" v-on:change="drawGraph()" class="custom-control-input" id="isDirected">
                   <label class="custom-control-label" for="isDirected">Directed Graph</label>
                 </div>
@@ -81,6 +85,7 @@ export default {
   name: 'EditGraph',
   data(){
     return {
+      multiEdge: false,
       isZoom: false,
       isAddEdge: false,
       isAddNode: false,
@@ -305,6 +310,7 @@ export default {
           .enter().append("path")
           .attr("class", "links")
           .attr("stroke-width", 3)
+          .attr("fill", "none")
           .merge(_this.links)
           .attr("marker-end", "url(#markerArrow")
           .on("mousedown", _this.linkMousedown);
@@ -380,7 +386,13 @@ export default {
           .attr("cy", d=> d.y);
 
       
-      _this.links.attr("d", _this.getArrowOffset);
+      if( !_this.multiEdge ){
+        _this.links.attr("d", _this.newOffset);
+      }else{
+        _this.links.attr("d", _this.arcOffset);
+      }
+
+      
       
       _this.nodelabels
           .attr("x", d => d.x) 
@@ -399,6 +411,44 @@ export default {
       let diffY = d.target.y - d.source.y;
       return Math.sqrt((diffX * diffX) + (diffY * diffY));
     },
+    newOffset(d){
+      var sourceX = d.source.x;
+      var sourceY = d.source.y;
+      var targetX = d.target.x;
+      var targetY = d.target.y;
+
+      var theta = Math.atan((targetX - sourceX) / (targetY - sourceY));
+      var phi = Math.atan((targetY - sourceY) / (targetX - sourceX));
+
+      var sinTheta = d.source.radius * Math.sin(theta);
+      var cosTheta = d.source.radius * Math.cos(theta);
+      var sinPhi = d.target.radius * Math.sin(phi);
+      var cosPhi = d.target.radius * Math.cos(phi);
+
+      // Set the position of the link's end point at the source node
+      // such that it is on the edge closest to the target node
+      if (d.target.y > d.source.y) {
+          sourceX = sourceX + sinTheta;
+          sourceY = sourceY + cosTheta;
+      }
+      else {
+          sourceX = sourceX - sinTheta;
+          sourceY = sourceY - cosTheta;
+      }
+
+      // Set the position of the link's end point at the target node
+      // such that it is on the edge closest to the source node
+      if (d.source.x > d.target.x) {
+          targetX = targetX + cosPhi;
+          targetY = targetY + sinPhi;    
+      }
+      else {
+          targetX = targetX - cosPhi;
+          targetY = targetY - sinPhi; 
+      }
+
+      return `M${sourceX},${sourceY}L${targetX},${targetY}`;
+    },
     //https://stackoverflow.com/a/16754080
     getArrowOffset(d){
       let diffX = d.target.x - d.source.x;
@@ -410,6 +460,60 @@ export default {
       let offsetY = (diffY * d.target.radius) / pathLength;
 
       return "M" + d.source.x + "," + d.source.y + "L" + (d.target.x - offsetX) + "," + (d.target.y - offsetY);
+    },
+    arcOffset(d){
+      
+      var sourceX = d.source.x;
+      var sourceY = d.source.y;
+      var targetX = d.target.x;
+      var targetY = d.target.y;
+
+      var theta = Math.atan((targetX - sourceX) / (targetY - sourceY));
+      var phi = Math.atan((targetY - sourceY) / (targetX - sourceX));
+
+      var sinTheta = d.source.radius * Math.sin(theta);
+      var cosTheta = d.source.radius * Math.cos(theta);
+      var sinPhi = d.target.radius * Math.sin(phi);
+      var cosPhi = d.target.radius * Math.cos(phi);
+
+      // Set the position of the link's end point at the source node
+      // such that it is on the edge closest to the target node
+      if (d.target.y > d.source.y) {
+          sourceX = sourceX + sinTheta;
+          sourceY = sourceY + cosTheta;
+      }
+      else {
+          sourceX = sourceX - sinTheta;
+          sourceY = sourceY - cosTheta;
+      }
+
+      // Set the position of the link's end point at the target node
+      // such that it is on the edge closest to the source node
+      if (d.source.x > d.target.x) {
+          targetX = targetX + cosPhi;
+          targetY = targetY + sinPhi;    
+      }
+      else {
+          targetX = targetX - cosPhi;
+          targetY = targetY - sinPhi; 
+      }
+
+      // Draw an arc between the two calculated points
+      var dx = targetX - sourceX,
+          dy = targetY - sourceY,
+          dr = Math.sqrt(dx * dx + dy * dy);
+
+      let drx = dr;
+      let dry = dr;
+
+
+      if (d.count > 1) {
+        var siblings = this.getSiblingLinks(d.nickname);
+        drx = drx/(1 + (1/d.count) * (siblings.indexOf(d.id)));
+        dry = dry/(1 + (1/d.count) * (siblings.indexOf(d.id)));
+      }
+
+      return "M" + sourceX + "," + sourceY + "A" + drx + "," + dry + " 0 0,1 " + targetX + "," + targetY;
     },
     loadEdges(){
 
@@ -476,8 +580,8 @@ export default {
             .style("fill", "black")
             .style("opacity", "1");
 
-      this.links = this.svg.append("g").selectAll(".links");
       this.nodes = this.svg.append("g").selectAll(".nodes");
+      this.links = this.svg.append("g").selectAll(".links");
       this.nodelabels = this.svg.append("g").selectAll(".node-label");
       this.vertexlabels = this.svg.append("g").selectAll(".vertex-label");
       this.linklabels = this.svg.append("g").selectAll(".link-label");
